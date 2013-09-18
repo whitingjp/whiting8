@@ -10,8 +10,8 @@ instructions are 16 bit
 final 8 are 'value' V
 
 0 VAL V -> D
-1 ADD D+V -> D
-2 SUB D-V -> D
+1 ADD A+B -> D
+2 SUB A-B -> D
 3 AND A&B -> D
 4 OR  A|B -> D
 5 GT  A>=B -> D
