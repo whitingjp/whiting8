@@ -14,7 +14,7 @@ final 8 are 'value' V
 2 SUB A-B -> D
 3 AND A&B -> D
 4 OR  A|B -> D
-5 GT  A>=B -> D
+5 GTE  A>=B -> D
 6 LOD Load memory addressed by AB into D
 7 SAV Save D into memory addressed by AB
 8 JMP Set PC to memory addressed by AB.
