@@ -11,22 +11,42 @@ typedef struct
 
 #define NUM_TESTS (1)
 Test tests[NUM_TESTS] = {
-	{{"    ; AASGNWFIAWNA"},{}}, // comments
+	{{"; AASGNWFIAWNA"},{}}, // comments
 };
 
 int lex(const char *in, int in_size, const char *out, int out_size)
 {
 	(void)out;
 	(void)out_size;
-	int in_off=0;
-	while(*(in+in_off) != 0)
+	int in_off;
+	int comment_mode = 0;
+	int line = 1;
+	for(in_off=0; in_off<in_size; in_off++)
 	{
-		in_off++;
-		if(in_off >= in_size)
+		unsigned char c = *(in+in_off);
+		if(c == 0)
+			break;
+		if(comment_mode)
 		{
-			printf("\nInput exhausted without reaching null char");
-			return 1;
+			if(c == '\n')
+				comment_mode = 0;
 		}
+		if(c == '\n')
+		{
+			line++;
+			continue;
+		}
+		if(comment_mode)
+			continue;
+		if(c == ' ' || c == '\t')
+			continue;
+		if(c == ';')
+		{
+			comment_mode = 1;
+			continue;
+		}
+		printf("\nUnrecognised char '%c' (0x%x) on line %d", c, c, line);
+		return 1;
 	}
 	return 0;
 }
