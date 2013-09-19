@@ -10,10 +10,11 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (2)
+#define NUM_TESTS (3)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
+	{{"val 1 f4\nval f aa  ; comment\n"},{0x01,0xf4, 0x0f,0xaa}, 4}, // multiple instructions
 };
 
 #define NUM_TOKENS (4)
