@@ -153,6 +153,8 @@ void corrupt_memory()
 
 int main( int arg, const char** argv)
 {
+	(void)(arg);
+	(void)(argv);
 	corrupt_memory();
 
 	printf( "\nRunning Tests: " );
