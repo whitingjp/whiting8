@@ -10,7 +10,7 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (18)
+#define NUM_TESTS (19)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
@@ -30,6 +30,7 @@ Test tests[NUM_TESTS] = {
 	{{"inp c\n"},{0xdc,0x00},2}, // inp
 	{{"hlt d\n"},{0xed,0x00},2}, // hlt
 	{{"snd e f\n"},{0xf0,0xef},2}, // snd
+	{{"val 0 f0\nval 1 f2\nadd 0 0 1\nhlt 0\n"},{0x00,0xf0, 0x01,0xf2, 0x10,0x01, 0xe0,0x00},8}, // longer test
 };
 
 #define NUM_TOKENS (4)
