@@ -10,7 +10,7 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (10)
+#define NUM_TESTS (11)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
@@ -22,6 +22,7 @@ Test tests[NUM_TESTS] = {
 	{{"gte 4 5 6\n"},{0x54,0x56},2}, // gte
 	{{"lod 5 6 7\n"},{0x65,0x67},2}, // lod
 	{{"sav 6 7 8\n"},{0x76,0x78},2}, // sav
+	{{"jmp 7 8\n"},{0x80,0x78},2}, // jmp
 };
 
 #define NUM_TOKENS (4)
@@ -57,11 +58,10 @@ int get_arg(unsigned char token[MAX_TOKEN_LENGTH], int len, int line)
 
 typedef enum
 {
-	ARGS_D,
-	ARGS_DV,
-	ARGS_AB,
-	ARGS_DAB,
-	ARGS_INVALID,
+	ARGS_D=1,
+	ARGS_V=2,
+	ARGS_AB=4,
+	ARGS_INVALID=0,
 } ArgsType;
 
 typedef struct
@@ -72,15 +72,15 @@ typedef struct
 
 #define NUMBER_OF_OPS (16)
 Op ops[NUMBER_OF_OPS] = {
-	{"val", ARGS_DV},
-	{"add", ARGS_DAB},
-	{"sub", ARGS_DAB},
-	{"and", ARGS_DAB},
-	{"or", ARGS_DAB},
-	{"gte", ARGS_DAB},
-	{"lod", ARGS_DAB},
-	{"sav", ARGS_DAB},
-	{"", ARGS_INVALID},
+	{"val", ARGS_D | ARGS_V},
+	{"add", ARGS_D | ARGS_AB},
+	{"sub", ARGS_D | ARGS_AB},
+	{"and", ARGS_D | ARGS_AB},
+	{"or", ARGS_D | ARGS_AB},
+	{"gte", ARGS_D | ARGS_AB},
+	{"lod", ARGS_D | ARGS_AB},
+	{"sav", ARGS_D | ARGS_AB},
+	{"jmp", ARGS_AB},
 	{"", ARGS_INVALID},
 	{"", ARGS_INVALID},
 	{"", ARGS_INVALID},
@@ -111,45 +111,34 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 		printf("\nUnsupported instruction on line %d", line);
 		return 1;
 	}
-	int d;
-	int v;
-	int a;
-	int b;
-	switch(type)
+	int required_num_args = 0;
+	if(type & ARGS_D) required_num_args++;
+	if(type & ARGS_V) required_num_args++;
+	if(type & ARGS_AB) required_num_args+=2;
+	if(num_tokens-1 != required_num_args)
 	{
-		case ARGS_DV:
-		{
-			if(num_tokens != 3)
-			{
-				printf("\nExpected 2 args, but found %d on line %d", num_tokens-1, line);
-				return 1;
-			}
-			d = get_arg(tokens[1], 1, line);
-			v = get_arg(tokens[2], 2, line);
-			if(d == -1 || v == -1)
-				return 1;
-			*c |= d;
-			*(c+1) = v;
-
-			break;
-		}
-		case ARGS_DAB:
-		{
-			if(num_tokens != 4)
-			{
-				printf("\nExpected 3 args, but found %d on line %d", num_tokens-1, line);
-				return 1;
-			}
-			d = get_arg(tokens[1], 1, line);
-			a = get_arg(tokens[2], 1, line);
-			b = get_arg(tokens[3], 1, line);
-			*c |= d;
-			*(c+1) = (a<<4)+b;
-			break;
-		}
-		default:
-			printf("\nUnsupported arg type %d", type);
-			return 1;
+		printf("\nExpected %d args, but found %d on line %d", required_num_args, num_tokens-1, line);
+		return 1;
+	}
+	int current_token=1;
+	if(type & ARGS_D)
+	{
+		int d = get_arg(tokens[current_token++], 1, line);
+		if(d == -1) return 1;
+		*c |= d;
+	}
+	if(type & ARGS_V)
+	{
+		int v = get_arg(tokens[current_token++], 2, line);
+		if(v == -1) return 1;
+		*(c+1) = v;
+	}
+	if(type & ARGS_AB)
+	{
+		int a = get_arg(tokens[current_token++], 1, line);
+		int b = get_arg(tokens[current_token++], 1, line);
+		if(a == -1 || b == -1) return 1;
+		*(c+1) = (a<<4)+b;
 	}
 	return 0;
 }
