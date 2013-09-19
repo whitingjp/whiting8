@@ -18,17 +18,6 @@ n = ninja_syntax.Writer(buildfile)
 
 objext = '.o'
 
-name = 'emulator'
-target = name+'.exe'
-srcdir = 'src'
-inputdir = 'input'
-builddir = 'build'
-outdir = joinp(builddir, name)
-objdir = joinp(builddir, 'obj')
-data_in = 'data'
-data_out = joinp(outdir, 'data')
-targets = []
-
 cflags = '-Isrc -Iinput/glfw/include -Wall -Wextra -Werror'
 ldflags = ' -Linput/glfw/lib-mingw -lglfw -lglu32 -lopengl32'
 if(args.debug):
@@ -55,18 +44,28 @@ n.rule('cp',
   description='COPY $in $out')
 n.newline()
 
-obj = []
-for (dirpath, dirnames, filenames) in os.walk(srcdir):
-  for f in filenames:
-    _, ext = os.path.splitext(f)
-    if ext == '.c':
-      s = os.path.relpath(joinp(dirpath, f), srcdir)
-      o = s.replace('.c', '.o')
-      obj += n.build(joinp(objdir, o), 'cxx', joinp(srcdir, s))
-n.newline()
+inputdir = 'input'
+builddir = 'build'
+outdir = joinp(builddir, 'whiting8')
+data_in = 'data'
+data_out = joinp(outdir, 'data')
 
-targets += n.build(joinp(outdir, target), 'link', obj)
-n.newline()
+names = ['emulator']
+for name in names:
+  target = name+'.exe'
+  srcdir = joinp('src', name)
+  objdir = joinp(builddir, 'obj')
+  targets = []
+  obj = []
+  for (dirpath, dirnames, filenames) in os.walk(srcdir):
+    for f in filenames:
+      _, ext = os.path.splitext(f)
+      if ext == '.c':
+        s = os.path.relpath(joinp(dirpath, f), srcdir)
+        o = s.replace('.c', '.o')
+        obj += n.build(joinp(objdir, o), 'cxx', joinp(srcdir, s))
+  targets += n.build(joinp(outdir, target), 'link', obj)
+  n.newline()
 
 data = []
 for (dirpath, dirnames, filenames) in os.walk(data_in):
