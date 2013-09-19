@@ -42,16 +42,21 @@ n.rule('link',
 n.rule('cp',
   command='cp $in $out',
   description='COPY $in $out')
+n.rule('test',
+  command='$in --test $out',
+  description='TEST $in')
 n.newline()
 
 inputdir = 'input'
 builddir = 'build'
 outdir = joinp(builddir, 'whiting8')
+testdir = joinp(builddir, 'test')
 data_in = 'data'
 data_out = joinp(outdir, 'data')
 
 names = ['assembler','emulator']
 targets = []
+tests = []
 for name in names:
   target = name+'.exe'
   srcdir = joinp('src', name)
@@ -65,6 +70,7 @@ for name in names:
         o = s.replace('.c', '.o')
         obj += n.build(joinp(objdir, o), 'cxx', joinp(srcdir, s))
   targets += n.build(joinp(outdir, target), 'link', obj)
+  tests += n.build(joinp(testdir, name+'.log'), 'test', joinp(outdir, target))
   n.newline()
 
 data = []
@@ -80,5 +86,6 @@ data += n.build(joinp(outdir, 'readme.txt'), 'cp', 'README.md')
 targets += n.build('data', 'phony', data)
 n.newline()
 
-n.build('all', 'phony', targets)
-n.default('all')
+full = n.build('all', 'phony', targets)
+test = n.build('test', 'phony', tests)
+n.default('test')

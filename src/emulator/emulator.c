@@ -142,7 +142,6 @@ int run_test(int n)
 
 void corrupt_memory()
 {
-	printf("\nFilling memory with values.");
 	int i;
 	srand(0);
 	for(i=0; i<MEMORY_SIZE; i++)
@@ -157,15 +156,15 @@ int main( int arg, const char** argv)
 	(void)(argv);
 	corrupt_memory();
 
-	printf( "\nRunning Tests: " );
+	printf( "Running Tests: " );
 
 	int i;
 	int fail = 0;
 	for(i=0; i<NUM_TESTS&&!fail; i++)
 		fail = run_test(i);
 	if(fail)
-		printf("\n\nSome tests failed!");
+		printf("\n\nSome tests failed!\n");
 	else
-		printf("\n\nAll tests passed :)\n");
+		printf("\nAll tests passed :)");
 	return fail;
 }
