@@ -50,12 +50,12 @@ outdir = joinp(builddir, 'whiting8')
 data_in = 'data'
 data_out = joinp(outdir, 'data')
 
-names = ['emulator']
+names = ['assembler','emulator']
+targets = []
 for name in names:
   target = name+'.exe'
   srcdir = joinp('src', name)
   objdir = joinp(builddir, 'obj')
-  targets = []
   obj = []
   for (dirpath, dirnames, filenames) in os.walk(srcdir):
     for f in filenames:
