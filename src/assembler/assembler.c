@@ -10,7 +10,7 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (11)
+#define NUM_TESTS (18)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
@@ -23,6 +23,13 @@ Test tests[NUM_TESTS] = {
 	{{"lod 5 6 7\n"},{0x65,0x67},2}, // lod
 	{{"sav 6 7 8\n"},{0x76,0x78},2}, // sav
 	{{"jmp 7 8\n"},{0x80,0x78},2}, // jmp
+	{{"cnd 8\n"},{0x98,0x00},2}, // cnd
+	{{"ovr 9\n"},{0xa9,0x00},2}, // ovr
+	{{"pnt a\n"},{0xba,0x00},2}, // pnt
+	{{"dsp b c d\n"},{0xcb,0xcd},2}, // dsp
+	{{"inp c\n"},{0xdc,0x00},2}, // inp
+	{{"hlt d\n"},{0xed,0x00},2}, // hlt
+	{{"snd e f\n"},{0xf0,0xef},2}, // snd
 };
 
 #define NUM_TOKENS (4)
@@ -81,20 +88,19 @@ Op ops[NUMBER_OF_OPS] = {
 	{"lod", ARGS_D | ARGS_AB},
 	{"sav", ARGS_D | ARGS_AB},
 	{"jmp", ARGS_AB},
-	{"", ARGS_INVALID},
-	{"", ARGS_INVALID},
-	{"", ARGS_INVALID},
-	{"", ARGS_INVALID},
-	{"", ARGS_INVALID},
-	{"", ARGS_INVALID},
-	{"", ARGS_INVALID},
+	{"cnd", ARGS_D},
+	{"ovr", ARGS_D},
+	{"pnt", ARGS_D},
+	{"dsp", ARGS_D | ARGS_AB},
+	{"inp", ARGS_D},
+	{"hlt", ARGS_D},
+	{"snd", ARGS_AB},
 };
 
 int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, unsigned char *c, int line)
 {
-	(void)tokens;
-	(void)c;
-
+	*c = 0;
+	*(c+1) = 0;
 	ArgsType type = ARGS_INVALID;
 	int i;
 	for(i=0; i<NUMBER_OF_OPS; i++)
