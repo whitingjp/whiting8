@@ -15,7 +15,7 @@ typedef struct
 	int exit_code;
 } Test;
 
-#define NUM_TESTS (15)
+#define NUM_TESTS (17)
 Test tests[NUM_TESTS] = {
 	{{0x00,0x00, 0x0e,0x00}, 0x00}, // can exit
 	{{0x00,0x01, 0x0e,0x00}, 0x01}, // can exit with non-zero code
@@ -32,7 +32,14 @@ Test tests[NUM_TESTS] = {
 	{{0x00,0x14, 0x10,0x25, 0x04,0x10, 0x0e,0x00}, 0x35}, // or
 	{{0x00,0x15, 0x10,0x14, 0x05,0x10, 0x0e,0x00}, 0x01}, // is greater
 	{{0x00,0x15, 0x10,0x15, 0x05,0x10, 0x0e,0x00}, 0x00}, // isn't greater
+	{{0x10,0x00, 0x20,0x08, 0x06,0x21, 0x0e,0x00, /*data*/ 0xfe}, 0xfe}, // lod memory
+	{{0x00,0xef, 0x10,0xcc, 0x20,0xaa, 0x07,0x21, 0x36,0x21, 0x3e,0x00}, 0xef}, // sav then lod high mem page
 };
+
+inline int memory_location(int a, int b)
+{
+	return (a<<8)+b;
+}
 
 unsigned char run()
 {
@@ -42,7 +49,7 @@ unsigned char run()
 	int overflow=0;
 	while(running)
 	{
-		char instruction = memory[PC]&0x0f;
+		unsigned char instruction = memory[PC]&0x0f;
 		int d = (memory[PC]&0xf0) >> 4;
 		int a = memory[PC+1]&0x0f;
 		int b = (memory[PC+1]&0xf0) >> 4;
@@ -72,6 +79,11 @@ unsigned char run()
 			case 0x5: // GTE
 				registers[d] = registers[a] > registers[b];
 				break;
+			case 0x6: // LOD
+				registers[d] = memory[memory_location(registers[a],registers[b])];
+				break;
+			case 0x7: // SAV
+				memory[memory_location(registers[a],registers[b])] = registers[d];
 			case 0xa: // OVR
 				registers[d]+=overflow;
 				break;
@@ -80,6 +92,7 @@ unsigned char run()
 				running = 0;
 				break;
 			default:
+				printf("\nInvalid instruction 0x%x", instruction);
 				exit_code = 0xff;
 				running = 0;
 				break;
