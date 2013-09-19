@@ -11,28 +11,44 @@ typedef struct
 
 #define NUM_TESTS (2)
 Test tests[NUM_TESTS] = {
-	{{"; AASGNWFIAWNA"},{}}, // comments
-	{{"val 2 4f"},{0x02,0x4f}}, // val
+	{{"; AASGNWFIAWNA\n"},{}}, // comments
+	{{"val 2 4f\n"},{0x02,0x4f}}, // val
 };
 
 #define NUM_TOKENS (4)
 #define MAX_TOKEN_LENGTH (3)
-int lex(const unsigned char *in, int in_size, const unsigned char *out, int out_size)
+
+int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH+1], unsigned char *c)
+{
+	(void)tokens;
+	(void)c;
+	printf("\ncreate_instruction failed");
+	return 1;
+}
+
+int tokenize(const unsigned char *in, int in_size, unsigned char *out, int out_size)
 {
 	(void)out;
 	(void)out_size;
-	int in_off;
+	int in_off=0;
+	int out_off=0;
 	int comment_mode = 0;
 	int line = 1;
 	int token_num = 0;
 	int token_pos = 0;
-	char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH+1];
+	unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH+1];
 	memset(tokens, 0, sizeof(tokens));
 	for(in_off=0; in_off<in_size; in_off++)
 	{
 		unsigned char c = *(in+in_off);
 		if(c == 0)
+		{
+			if(token_num || token_pos)
+			{
+				printf("\nMissing terminating newline on line %d", line);
+			}
 			break;
+		}
 		if(comment_mode)
 		{
 			if(c == '\n')
@@ -40,6 +56,17 @@ int lex(const unsigned char *in, int in_size, const unsigned char *out, int out_
 		}
 		if(c == '\n')
 		{
+			if(out_off == out_size-1)
+			{
+				printf("\nRun out of output space.");
+				return 1;
+			}
+			if(token_num || token_pos)
+			{
+				int fail = create_instruction(tokens, &out[out_off]);
+				if(fail) return 1;
+				out_off++;
+			}
 			token_num = 0;
 			token_pos = 0;
 			memset(tokens, 0, sizeof(tokens));
@@ -85,7 +112,7 @@ int run_test(int n)
 {
 	unsigned char out[TEST_PROGRAM_SIZE];
 	memset(out, 0, sizeof(out));
-	int fail = lex(tests[n].program, TEST_PROGRAM_SIZE, out, TEST_PROGRAM_SIZE);
+	int fail = tokenize(tests[n].program, TEST_PROGRAM_SIZE, out, TEST_PROGRAM_SIZE);
 	if(fail)
 	{
 		printf("\nTEST %d FAILED: Assembly problem.", n);
