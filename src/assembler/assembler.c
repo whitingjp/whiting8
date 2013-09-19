@@ -10,12 +10,18 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (4)
+#define NUM_TESTS (10)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
 	{{"val 1 f4\nval f aa; comment\n"},{0x01,0xf4, 0x0f,0xaa}, 4}, // multiple instructions
 	{{"add 0 1 2\n"},{0x10,0x12},2}, // add
+	{{"sub 1 2 3\n"},{0x21,0x23},2}, // sub
+	{{"and 2 3 4\n"},{0x32,0x34},2}, // and
+	{{"or 3 4 5\n"},{0x43,0x45},2}, // or
+	{{"gte 4 5 6\n"},{0x54,0x56},2}, // gte
+	{{"lod 5 6 7\n"},{0x65,0x67},2}, // lod
+	{{"sav 6 7 8\n"},{0x76,0x78},2}, // sav
 };
 
 #define NUM_TOKENS (4)
@@ -72,7 +78,32 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 	{
 		*c = 0x10;
 		type = ARGS_DAB;
+	} else if(strncmp((char*)tokens[0], "sub", MAX_TOKEN_LENGTH)==0)
+	{
+		*c = 0x20;
+		type = ARGS_DAB;
+	} else if(strncmp((char*)tokens[0], "and", MAX_TOKEN_LENGTH)==0)
+	{
+		*c = 0x30;
+		type = ARGS_DAB;
+	} else if(strncmp((char*)tokens[0], "or", MAX_TOKEN_LENGTH)==0)
+	{
+		*c = 0x40;
+		type = ARGS_DAB;
+	} else if(strncmp((char*)tokens[0], "gte", MAX_TOKEN_LENGTH)==0)
+	{
+		*c = 0x50;
+		type = ARGS_DAB;
+	} else if(strncmp((char*)tokens[0], "lod", MAX_TOKEN_LENGTH)==0)
+	{
+		*c = 0x60;
+		type = ARGS_DAB;
+	} else if(strncmp((char*)tokens[0], "sav", MAX_TOKEN_LENGTH)==0)
+	{
+		*c = 0x70;
+		type = ARGS_DAB;
 	}
+
 	if(type == ARGS_INVALID)
 	{
 		printf("\nUnsupported instruction on line %d", line);
