@@ -15,7 +15,7 @@ typedef struct
 	int exit_code;
 } Test;
 
-#define NUM_TESTS (17)
+#define NUM_TESTS (18)
 Test tests[NUM_TESTS] = {
 	{{0x00,0x00, 0xe0,0x00}, 0x00}, // can exit
 	{{0x00,0x01, 0xe0,0x00}, 0x01}, // can exit with non-zero code
@@ -34,6 +34,7 @@ Test tests[NUM_TESTS] = {
 	{{0x00,0x15, 0x01,0x15, 0x50,0x01, 0xe0,0x00}, 0x00}, // isn't greater
 	{{0x01,0x00, 0x02,0x08, 0x60,0x12, 0xe0,0x00, /*data*/ 0xfe}, 0xfe}, // lod memory
 	{{0x00,0xef, 0x01,0xcc, 0x02,0xaa, 0x70,0x12, 0x63,0x12, 0xe3,0x00}, 0xef}, // sav then lod high mem page
+	{{0x00,0x00, 0x01,0x08, 0x80,0x01, 0xe0,0x00, 0xe1,0x00}, 0x08}, // jmp over a halt
 };
 
 inline int memory_location(int a, int b)
@@ -84,6 +85,10 @@ unsigned char run()
 				break;
 			case 0x7: // SAV
 				memory[memory_location(registers[a],registers[b])] = registers[d];
+				break;
+			case 0x8: // JMP
+				PC = memory_location(registers[a], registers[b]);
+				break;
 			case 0xa: // OVR
 				registers[d]+=overflow;
 				break;
@@ -98,7 +103,8 @@ unsigned char run()
 				break;
 		}
 		overflow = new_overflow;
-		PC += 2;
+		if(instruction != 0x8)
+			PC += 2;
 	}
 	return exit_code;
 }
