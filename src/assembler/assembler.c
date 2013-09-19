@@ -7,12 +7,13 @@ typedef struct
 {
 	const unsigned char program[TEST_PROGRAM_SIZE];
 	const unsigned char output[TEST_PROGRAM_SIZE];
+	int output_size;
 } Test;
 
 #define NUM_TESTS (2)
 Test tests[NUM_TESTS] = {
-	{{"; AASGNWFIAWNA\n"},{}}, // comments
-	{{"val 2 4f\n"},{0x02,0x4f}}, // val
+	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
+	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
 };
 
 #define NUM_TOKENS (4)
@@ -22,14 +23,14 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH+1], uns
 {
 	(void)tokens;
 	(void)c;
-	printf("\ncreate_instruction failed");
-	return 1;
+
+	if(strncmp((char*)tokens[0], "val", MAX_TOKEN_LENGTH)==0)
+		*c = 0x00;
+	return 0;
 }
 
-int tokenize(const unsigned char *in, int in_size, unsigned char *out, int out_size)
+int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 {
-	(void)out;
-	(void)out_size;
 	int in_off=0;
 	int out_off=0;
 	int comment_mode = 0;
@@ -38,7 +39,7 @@ int tokenize(const unsigned char *in, int in_size, unsigned char *out, int out_s
 	int token_pos = 0;
 	unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH+1];
 	memset(tokens, 0, sizeof(tokens));
-	for(in_off=0; in_off<in_size; in_off++)
+	for(in_off=0; in_off<TEST_PROGRAM_SIZE; in_off++)
 	{
 		unsigned char c = *(in+in_off);
 		if(c == 0)
@@ -56,7 +57,7 @@ int tokenize(const unsigned char *in, int in_size, unsigned char *out, int out_s
 		}
 		if(c == '\n')
 		{
-			if(out_off == out_size-1)
+			if(out_off == TEST_PROGRAM_SIZE-1)
 			{
 				printf("\nRun out of output space.");
 				return 1;
@@ -65,7 +66,7 @@ int tokenize(const unsigned char *in, int in_size, unsigned char *out, int out_s
 			{
 				int fail = create_instruction(tokens, &out[out_off]);
 				if(fail) return 1;
-				out_off++;
+				out_off+=2;
 			}
 			token_num = 0;
 			token_pos = 0;
@@ -105,29 +106,38 @@ int tokenize(const unsigned char *in, int in_size, unsigned char *out, int out_s
 		printf("\nUnrecognised char '%c' (0x%x) on line %d", c, c, line);
 		return 1;
 	}
+	*out_size = out_off-1;
 	return 0;
 }
 
 int run_test(int n)
 {
 	unsigned char out[TEST_PROGRAM_SIZE];
-	memset(out, 0, sizeof(out));
-	int fail = tokenize(tests[n].program, TEST_PROGRAM_SIZE, out, TEST_PROGRAM_SIZE);
+	memset(out, 0xef, sizeof(out));
+	int out_size;
+	int fail = tokenize(tests[n].program, out, &out_size);
 	if(fail)
 	{
 		printf("\nTEST %d FAILED: Assembly problem.", n);
 		return 1;
 	}
-	if(strncmp((char*)out, (char*)tests[n].output, TEST_PROGRAM_SIZE)!=0)
+	int differ = 0;
+	unsigned char out_comparator[TEST_PROGRAM_SIZE];
+	int i=0;
+	for(i=0; i<tests[n].output_size; i++)
+		differ |= out[i] != out_comparator[i];
+	if(differ)
 	{
 		printf("\nTEST %d FAILED: Output differed.", n);
 		printf("\nExpected: ");
 		const unsigned char *cp;
-		for(cp=tests[n].output; *cp!=0; cp++)
-			printf("0x%02x,",*cp);
+		cp = tests[n].output;
+		for(i=0; i<tests[n].output_size; i++)
+			printf("0x%02x,",*(cp+i));
 		printf("\n  Actual: ");
-		for(cp=out; *cp!=0; cp++)
-			printf("0x%02x,",*cp);
+		cp = out;
+		for(i=0; i<out_size; i++)
+			printf("0x%02x,",*(cp+i));
 		return 1;
 	}
 	printf("P");
