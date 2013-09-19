@@ -14,8 +14,8 @@ typedef struct
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
-	{{"val 1 f4\nval f aa  ; comment\n"},{0x01,0xf4, 0x0f,0xaa}, 4}, // multiple instructions
-	{{"add 0 1 2"},{0x10,0x12},2}, // add
+	{{"val 1 f4\nval f aa; comment\n"},{0x01,0xf4, 0x0f,0xaa}, 4}, // multiple instructions
+	{{"add 0 1 2\n"},{0x10,0x12},2}, // add
 };
 
 #define NUM_TOKENS (4)
@@ -58,7 +58,7 @@ typedef enum
 	ARGS_INVALID,
 } ArgsType;
 
-int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], unsigned char *c, int line)
+int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, unsigned char *c, int line)
 {
 	(void)tokens;
 	(void)c;
@@ -68,21 +68,50 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], unsig
 	{
 		*c = 0x00;
 		type = ARGS_DV;
-	}	
+	} else if(strncmp((char*)tokens[0], "add", MAX_TOKEN_LENGTH)==0)
+	{
+		*c = 0x10;
+		type = ARGS_DAB;
+	}
+	if(type == ARGS_INVALID)
+	{
+		printf("\nUnsupported instruction on line %d", line);
+		return 1;
+	}
 	int d;
 	int v;
-	// int a;
-	// int b;
+	int a;
+	int b;
 	switch(type)
 	{
 		case ARGS_DV:
 		{
+			if(num_tokens != 3)
+			{
+				printf("\nExpected 2 args, but found %d on line %d", num_tokens-1, line);
+				return 1;
+			}
 			d = get_arg(tokens[1], 1, line);
 			v = get_arg(tokens[2], 2, line);
 			if(d == -1 || v == -1)
 				return 1;
 			*c |= d;
 			*(c+1) = v;
+
+			break;
+		}
+		case ARGS_DAB:
+		{
+			if(num_tokens != 4)
+			{
+				printf("\nExpected 3 args, but found %d on line %d", num_tokens-1, line);
+				return 1;
+			}
+			d = get_arg(tokens[1], 1, line);
+			a = get_arg(tokens[2], 1, line);
+			b = get_arg(tokens[3], 1, line);
+			*c |= d;
+			*(c+1) = (a<<4)+b;
 			break;
 		}
 		default:
@@ -127,7 +156,7 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 			}
 			if(token_num || token_pos)
 			{
-				int fail = create_instruction(tokens, &out[out_off], line);
+				int fail = create_instruction(tokens, token_num+1, &out[out_off], line);
 				if(fail) return 1;
 				out_off+=2;
 			}
