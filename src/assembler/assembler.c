@@ -64,44 +64,46 @@ typedef enum
 	ARGS_INVALID,
 } ArgsType;
 
+typedef struct
+{
+	char instruction[MAX_TOKEN_LENGTH];
+	ArgsType type;
+} Op;
+
+#define NUMBER_OF_OPS (16)
+Op ops[NUMBER_OF_OPS] = {
+	{"val", ARGS_DV},
+	{"add", ARGS_DAB},
+	{"sub", ARGS_DAB},
+	{"and", ARGS_DAB},
+	{"or", ARGS_DAB},
+	{"gte", ARGS_DAB},
+	{"lod", ARGS_DAB},
+	{"sav", ARGS_DAB},
+	{"", ARGS_INVALID},
+	{"", ARGS_INVALID},
+	{"", ARGS_INVALID},
+	{"", ARGS_INVALID},
+	{"", ARGS_INVALID},
+	{"", ARGS_INVALID},
+	{"", ARGS_INVALID},
+	{"", ARGS_INVALID},
+};
+
 int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, unsigned char *c, int line)
 {
 	(void)tokens;
 	(void)c;
 
 	ArgsType type = ARGS_INVALID;
-	if(strncmp((char*)tokens[0], "val", MAX_TOKEN_LENGTH)==0)
+	int i;
+	for(i=0; i<NUMBER_OF_OPS; i++)
 	{
-		*c = 0x00;
-		type = ARGS_DV;
-	} else if(strncmp((char*)tokens[0], "add", MAX_TOKEN_LENGTH)==0)
-	{
-		*c = 0x10;
-		type = ARGS_DAB;
-	} else if(strncmp((char*)tokens[0], "sub", MAX_TOKEN_LENGTH)==0)
-	{
-		*c = 0x20;
-		type = ARGS_DAB;
-	} else if(strncmp((char*)tokens[0], "and", MAX_TOKEN_LENGTH)==0)
-	{
-		*c = 0x30;
-		type = ARGS_DAB;
-	} else if(strncmp((char*)tokens[0], "or", MAX_TOKEN_LENGTH)==0)
-	{
-		*c = 0x40;
-		type = ARGS_DAB;
-	} else if(strncmp((char*)tokens[0], "gte", MAX_TOKEN_LENGTH)==0)
-	{
-		*c = 0x50;
-		type = ARGS_DAB;
-	} else if(strncmp((char*)tokens[0], "lod", MAX_TOKEN_LENGTH)==0)
-	{
-		*c = 0x60;
-		type = ARGS_DAB;
-	} else if(strncmp((char*)tokens[0], "sav", MAX_TOKEN_LENGTH)==0)
-	{
-		*c = 0x70;
-		type = ARGS_DAB;
+		if(strncmp((char*)tokens[0], ops[i].instruction, MAX_TOKEN_LENGTH)==0)
+		{
+			*c = i<<4;
+			type = ops[i].type;
+		}
 	}
 
 	if(type == ARGS_INVALID)
