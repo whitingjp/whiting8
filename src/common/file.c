@@ -20,7 +20,6 @@ bool file_save(const char* fileName, int size, const void* data)
     fclose(dest);
     return false;
   }
-  LOG("Saved data to %s", fileName);
   fclose(dest);
   return true;
 }
@@ -50,7 +49,6 @@ bool file_load(const char* fileName, int* size, void* data, int data_size)
     fclose(src);
     return false;
   }
-  LOG("Loaded data from %s", fileName);
   fclose(src);
   return true;
 }

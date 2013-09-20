@@ -1,6 +1,8 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <common/file.h>
 #include <common/logging.h>
 
 #define NUM_REGISTERS (16)
@@ -9,7 +11,7 @@ unsigned char registers[16];
 unsigned char memory[MEMORY_SIZE];
 unsigned int PC;
 
-#define TEST_PROGRAM_SIZE (128)
+#define TEST_PROGRAM_SIZE (512)
 typedef struct
 {
 	const char program[TEST_PROGRAM_SIZE];
@@ -151,20 +153,8 @@ void corrupt_memory()
 		registers[i] = rand();
 }
 
-int main( int arg, const char** argv)
+int run_tests()
 {
-	if(arg < 3)
-	{
-		QLOG("Insufficent arguments.");
-		return 1;
-	}
-	if(strncmp(argv[1], "--test", 6) != 0)
-	{
-		QLOG("Invalid flag.");
-		return 1;
-	}
-	set_logfile(argv[2]);
-
 	corrupt_memory();
 
 	QLOG( "Running Tests: " );
@@ -178,4 +168,36 @@ int main( int arg, const char** argv)
 	else
 		QLOG("\nAll tests passed :)");
 	return fail;
+}
+
+int main( int arg, const char** argv)
+{
+	if(arg < 2)
+	{
+		QLOG("Insufficent arguments.");
+		return 1;
+	}
+	if(strncmp(argv[1], "--test", 6) == 0)
+	{
+		if(arg < 3)
+		{
+			QLOG("Insufficent arguments.");
+			return 1;
+		}
+		set_logfile(argv[2]);
+		return run_tests();
+	}
+	
+	unsigned char input[TEST_PROGRAM_SIZE];
+	int size;
+	bool success = file_load(argv[1], &size, input, sizeof(input));
+	if(!success)
+	{
+		LOG("Failed to load machine code file.");
+		return 1;
+	}
+	memset(memory, 0xe0, sizeof(memory)); // Halt rapidly if overrun
+	memset(registers, 0, sizeof(registers));
+	memcpy(memory, input, size);
+	return run();
 }

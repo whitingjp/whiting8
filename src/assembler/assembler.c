@@ -165,11 +165,14 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 	for(in_off=0; in_off<TEST_PROGRAM_SIZE; in_off++)
 	{
 		unsigned char c = *(in+in_off);
+		if(c == '\r')
+			continue;
 		if(c == 0)
 		{
 			if(token_num || token_pos)
 			{
 				LOG("Missing terminating newline on line %d", line);
+				return 1;
 			}
 			break;
 		}
