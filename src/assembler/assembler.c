@@ -12,7 +12,7 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (21)
+#define NUM_TESTS (22)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
@@ -35,6 +35,7 @@ Test tests[NUM_TESTS] = {
 	{{"val 0 f0\nval 1 f2\nadd 0 0 1\nhlt 0\n"},{0x00,0xf0, 0x01,0xf2, 0x10,0x01, 0xe0,0x00},8}, // longer test
 	{{"-label\n"},{},0}, // create a label
 	{{"add 2 3 4\n-moo\nlabel -moo 0 1\n"},{0x12,0x34, 0x00,0x00,0x01,0x02}, 6}, // load label
+	{{"label -moo 0 1\n-moo\n"},{0x00,0x00,0x01,0x04}, 4}, // label comes after usage
 };
 
 #define NUM_TOKENS (4)
@@ -151,8 +152,27 @@ int create_label(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tok
 	return 0;
 }
 
-int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, LabelStore* label_store, unsigned char *c, int* size, int line)
+int create_request(unsigned char token[MAX_TOKEN_LENGTH], LabelStore* label_requests, int pos, int line)
 {
+	(void)token;
+	(void)label_requests;
+	(void)pos;
+	(void)line;	
+	if(label_requests->size == NUM_LABELS)
+	{
+		LOG("Label requests (size %d) is full on line %d", NUM_LABELS, line);
+		return 1;
+	}
+	Label *label = &label_requests->labels[label_requests->size];
+	memcpy(label->name, token, MAX_TOKEN_LENGTH);
+	label->pos = pos;
+	label_requests->size++;
+	return 0;
+}
+
+int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, LabelStore* label_requests, unsigned char *c, int* size, int line)
+{
+	(void)label_requests;
 	*size = 2;
 	*c = 0;
 	*(c+1) = 0;
@@ -185,18 +205,14 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 	int current_token=1;
 	if(type & ARGS_LABEL)
 	{
-		int pos = find_label(tokens[current_token++], label_store);
-		if(pos == -1)
-		{
-			LOG("Unable to find label on line %d", line);
+		if(create_request(tokens[current_token++], label_requests, (int)c, line))
 			return 1;
-		}
 		int a = get_arg(tokens[current_token++], 1, line);
 		int b = get_arg(tokens[current_token++], 1, line);
 		*c = a;
-		*(c+1) = (pos&0xff00)>>8;
+		*(c+1) = 0;
 		*(c+2) = b;
-		*(c+3) = (pos&0xff);
+		*(c+3) = 0;
 		*size = 4;
 	}
 	if(type & ARGS_D)
@@ -232,7 +248,9 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 	unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH];
 	memset(tokens, 0, sizeof(tokens));
 	LabelStore label_store;
+	LabelStore label_requests;
 	memset(&label_store, 0, sizeof(label_store));
+	memset(&label_requests, 0, sizeof(label_requests));
 	for(in_off=0; in_off<TEST_PROGRAM_SIZE; in_off++)
 	{
 		unsigned char c = *(in+in_off);
@@ -269,7 +287,7 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 				else
 				{
 					int size;
-					int fail = create_instruction(tokens, token_num+1, &label_store, &out[out_off], &size, line);
+					int fail = create_instruction(tokens, token_num+1, &label_requests, &out[out_off], &size, line);
 					if(fail) return 1;
 					out_off += size;
 				}
@@ -311,6 +329,22 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 		}
 		LOG("Unrecognised char '%c' (0x%x) on line %d", c, c, line);
 		return 1;
+	}
+	int i;
+	for(i=0; i<label_requests.size; i++)
+	{
+		Label *request = &label_requests.labels[i];
+		int pos = find_label(request->name, &label_store);
+		if(pos == -1)
+		{
+			char buffer[MAX_TOKEN_LENGTH];
+			memset(buffer, 0, sizeof(buffer));
+			memcpy(buffer, request->name, MAX_TOKEN_LENGTH-2);
+			LOG("Unable to find label %s", buffer);
+		}
+		unsigned char* c = (unsigned char*)request->pos;
+		*(c+1) = (pos&0xff00)>>8;
+		*(c+3) = (pos&0xff);
 	}
 	*out_size = out_off;
 	return 0;
