@@ -95,5 +95,5 @@ targets += n.build('data', 'phony', data)
 n.newline()
 
 full = n.build('all', 'phony', targets)
-test = n.build('test', 'phony', tests)
+test = n.build('test', 'phony', full+tests)
 n.default('test')
