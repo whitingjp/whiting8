@@ -54,13 +54,8 @@ testdir = joinp(builddir, 'test')
 data_in = 'data'
 data_out = joinp(outdir, 'data')
 
-names = ['assembler','emulator']
-targets = []
-tests = []
-for name in names:
-  target = name+'.exe'
-  srcdir = joinp('src', name)
-  objdir = joinp(builddir, 'obj')
+objdir = joinp(builddir, 'obj')
+def obj_walk(srcdir):
   obj = []
   for (dirpath, dirnames, filenames) in os.walk(srcdir):
     for f in filenames:
@@ -69,6 +64,18 @@ for name in names:
         s = os.path.relpath(joinp(dirpath, f), srcdir)
         o = s.replace('.c', '.o')
         obj += n.build(joinp(objdir, o), 'cxx', joinp(srcdir, s))
+  return obj
+
+commondir = joinp('src', 'common')
+commonobj = obj_walk(commondir)
+
+names = ['assembler','emulator']
+targets = []
+tests = []
+for name in names:
+  target = name+'.exe'
+  namedir = joinp('src', name)
+  obj = obj_walk(namedir) + commonobj
   targets += n.build(joinp(outdir, target), 'link', obj)
   tests += n.build(joinp(testdir, name+'.log'), 'test', joinp(outdir, target))
   n.newline()

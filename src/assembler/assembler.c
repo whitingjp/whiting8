@@ -1,6 +1,7 @@
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <common/logging.h>
 
 #define TEST_PROGRAM_SIZE (512)
 typedef struct
@@ -51,12 +52,12 @@ int get_arg(unsigned char token[MAX_TOKEN_LENGTH], int len, int line)
 			v = token[i]-'a'+10;
 		if(v==-1)
 		{
-			printf("\nInvalid hex char '%c' (0x%02x) in line %d", token[i], token[i], line);
+			LOG("Invalid hex char '%c' (0x%02x) in line %d", token[i], token[i], line);
 			return -1;
 		}
 		if(i >= len)
 		{
-			printf("\nArg too long on %d", line);
+			LOG("Arg too long on %d", line);
 			return -1;
 		}
 		val = (val<<4)+v;
@@ -115,7 +116,7 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 
 	if(type == ARGS_INVALID)
 	{
-		printf("\nUnsupported instruction on line %d", line);
+		LOG("Unsupported instruction on line %d", line);
 		return 1;
 	}
 	int required_num_args = 0;
@@ -124,7 +125,7 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 	if(type & ARGS_AB) required_num_args+=2;
 	if(num_tokens-1 != required_num_args)
 	{
-		printf("\nExpected %d args, but found %d on line %d", required_num_args, num_tokens-1, line);
+		LOG("Expected %d args, but found %d on line %d", required_num_args, num_tokens-1, line);
 		return 1;
 	}
 	int current_token=1;
@@ -167,7 +168,7 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 		{
 			if(token_num || token_pos)
 			{
-				printf("\nMissing terminating newline on line %d", line);
+				LOG("Missing terminating newline on line %d", line);
 			}
 			break;
 		}
@@ -180,7 +181,7 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 		{
 			if(out_off == TEST_PROGRAM_SIZE-1)
 			{
-				printf("\nRun out of output space.");
+				LOG("Run out of output space.");
 				return 1;
 			}
 			if(token_num || token_pos)
@@ -202,7 +203,7 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 			if(token_pos > 0)
 			{
 				if(token_num+1 == NUM_TOKENS)
-					printf("\nToo many tokens on line %d", line);
+					LOG("Too many tokens on line %d", line);
 				token_num++;
 				token_pos = 0;
 			}
@@ -217,14 +218,14 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 		{
 			if(token_pos == MAX_TOKEN_LENGTH)
 			{
-				printf("\nToken too long on line %d", line);
+				LOG("Token too long on line %d", line);
 				return 1;
 			}
 			tokens[token_num][token_pos] = c;
 			token_pos++;
 			continue;			
 		}
-		printf("\nUnrecognised char '%c' (0x%x) on line %d", c, c, line);
+		LOG("Unrecognised char '%c' (0x%x) on line %d", c, c, line);
 		return 1;
 	}
 	*out_size = out_off;
@@ -239,7 +240,7 @@ int run_test(int n)
 	int fail = tokenize(tests[n].program, out, &out_size);
 	if(fail)
 	{
-		printf("\nTEST %d FAILED: Assembly problem.", n);
+		QLOG("\nTEST %d FAILED: Assembly problem.", n);
 		return 1;
 	}
 	int differ = 0;
@@ -248,19 +249,19 @@ int run_test(int n)
 		differ |= out[i] != tests[n].output[i];
 	if(differ)
 	{
-		printf("\nTEST %d FAILED: Output differed.", n);
-		printf("\nExpected: ");
+		QLOG("\nTEST %d FAILED: Output differed.", n);
+		QLOG("\nExpected: ");
 		const unsigned char *cp;
 		cp = tests[n].output;
 		for(i=0; i<tests[n].output_size; i++)
-			printf("0x%02x,",*(cp+i));
-		printf("\n  Actual: ");
+			QLOG("0x%02x,",*(cp+i));
+		QLOG("\n  Actual: ");
 		cp = out;
 		for(i=0; i<out_size; i++)
-			printf("0x%02x,",*(cp+i));
+			QLOG("0x%02x,",*(cp+i));
 		return 1;
 	}
-	printf("P");
+	QLOG("P");
 	return 0;
 }
 
@@ -269,16 +270,16 @@ int main( int arg, const char** argv)
 	(void)(arg);
 	(void)(argv);
 
-	printf( "Running Tests: " );
+	QLOG( "Running Tests: " );
 	int fail = 0;
 
 	int i;
 	for(i=0; i<NUM_TESTS&&!fail; i++)
 		fail = run_test(i);
 	if(fail)
-		printf("\n\nSome tests failed!\n");
+		QLOG("\n\nSome tests failed!\n");
 	else
-		printf("\nAll tests passed :)\n");
+		QLOG("\nAll tests passed :)\n");
 
 	return fail;
 }

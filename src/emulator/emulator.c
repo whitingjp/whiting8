@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <common/logging.h>
 
 #define NUM_REGISTERS (16)
 unsigned char registers[16];
@@ -112,7 +113,7 @@ unsigned char run()
 				running = 0;
 				break;
 			default:
-				printf("\nInvalid instruction 0x%x", instruction);
+				LOG("Invalid instruction 0x%x", instruction);
 				exit_code = 0xff;
 				running = 0;
 				break;
@@ -130,12 +131,12 @@ int run_test(int n)
 	unsigned char exit_code = run();
 	if(exit_code == tests[n].exit_code)
 	{
-		printf("P");
+		QLOG("P");
 		return 0;
 	}
 	else
 	{
-		printf("\nTEST %d FAILED: Expected exit_code 0x%x got 0x%x", n, tests[n].exit_code, exit_code);
+		LOG("TEST %d FAILED: Expected exit_code 0x%x got 0x%x", n, tests[n].exit_code, exit_code);
 		return 1;
 	}
 }
@@ -156,15 +157,15 @@ int main( int arg, const char** argv)
 	(void)(argv);
 	corrupt_memory();
 
-	printf( "Running Tests: " );
+	QLOG( "Running Tests: " );
 
 	int i;
 	int fail = 0;
 	for(i=0; i<NUM_TESTS&&!fail; i++)
 		fail = run_test(i);
 	if(fail)
-		printf("\n\nSome tests failed!\n");
+		QLOG("\nSome tests failed!\n");
 	else
-		printf("\nAll tests passed :)");
+		QLOG("\nAll tests passed :)");
 	return fail;
 }
