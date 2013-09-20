@@ -153,8 +153,18 @@ void corrupt_memory()
 
 int main( int arg, const char** argv)
 {
-	(void)(arg);
-	(void)(argv);
+	if(arg < 3)
+	{
+		QLOG("Insufficent arguments.");
+		return 1;
+	}
+	if(strncmp(argv[1], "--test", 6) != 0)
+	{
+		QLOG("Invalid flag.");
+		return 1;
+	}
+	set_logfile(argv[2]);
+
 	corrupt_memory();
 
 	QLOG( "Running Tests: " );

@@ -267,8 +267,17 @@ int run_test(int n)
 
 int main( int arg, const char** argv)
 {
-	(void)(arg);
-	(void)(argv);
+	if(arg < 3)
+	{
+		QLOG("Insufficent arguments.");
+		return 1;
+	}
+	if(strncmp(argv[1], "--test", 6) != 0)
+	{
+		QLOG("Invalid flag.");
+		return 1;
+	}
+	set_logfile(argv[2]);
 
 	QLOG( "Running Tests: " );
 	int fail = 0;
@@ -277,7 +286,7 @@ int main( int arg, const char** argv)
 	for(i=0; i<NUM_TESTS&&!fail; i++)
 		fail = run_test(i);
 	if(fail)
-		QLOG("\n\nSome tests failed!\n");
+		QLOG("\nSome tests failed!\n");
 	else
 		QLOG("\nAll tests passed :)\n");
 
