@@ -12,7 +12,7 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (19)
+#define NUM_TESTS (21)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
@@ -33,10 +33,24 @@ Test tests[NUM_TESTS] = {
 	{{"hlt d\n"},{0xed,0x00},2}, // hlt
 	{{"snd e f\n"},{0xf0,0xef},2}, // snd
 	{{"val 0 f0\nval 1 f2\nadd 0 0 1\nhlt 0\n"},{0x00,0xf0, 0x01,0xf2, 0x10,0x01, 0xe0,0x00},8}, // longer test
+	{{"-label\n"},{},0}, // create a label
+	{{"add 2 3 4\n-moo\nlabel -moo 0 1\n"},{0x12,0x34, 0x00,0x00,0x01,0x02}, 6}, // load label
 };
 
 #define NUM_TOKENS (4)
-#define MAX_TOKEN_LENGTH (3)
+#define MAX_TOKEN_LENGTH (16)
+#define NUM_LABELS (64)
+
+typedef struct
+{
+	unsigned char name[MAX_TOKEN_LENGTH];
+	int pos;
+} Label;
+typedef struct
+{
+	Label labels[NUM_LABELS];
+	int size;
+} LabelStore;
 
 int get_arg(unsigned char token[MAX_TOKEN_LENGTH], int len, int line)
 {
@@ -68,9 +82,10 @@ int get_arg(unsigned char token[MAX_TOKEN_LENGTH], int len, int line)
 
 typedef enum
 {
-	ARGS_D=1,
-	ARGS_V=2,
-	ARGS_AB=4,
+	ARGS_LABEL=1,
+	ARGS_D=2,
+	ARGS_V=4,
+	ARGS_AB=8,
 	ARGS_INVALID=0,
 } ArgsType;
 
@@ -80,7 +95,7 @@ typedef struct
 	ArgsType type;
 } Op;
 
-#define NUMBER_OF_OPS (16)
+#define NUMBER_OF_OPS (17)
 Op ops[NUMBER_OF_OPS] = {
 	{"val", ARGS_D | ARGS_V},
 	{"add", ARGS_D | ARGS_AB},
@@ -98,10 +113,47 @@ Op ops[NUMBER_OF_OPS] = {
 	{"inp", ARGS_D},
 	{"hlt", ARGS_D},
 	{"snd", ARGS_AB},
+	{"label", ARGS_LABEL},
 };
 
-int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, unsigned char *c, int line)
+int find_label(unsigned char token[MAX_TOKEN_LENGTH], LabelStore* label_store)
 {
+	int i=0;
+	for(i=0; i<label_store->size; i++)
+	{
+		if(strncmp((char*)token, (char*)label_store->labels[i].name, MAX_TOKEN_LENGTH)==0)
+			return label_store->labels[i].pos;
+	}
+	return -1;
+}
+
+int create_label(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, LabelStore* label_store, int pos, int line)
+{
+	if(num_tokens > 1)
+	{
+		LOG("Multi-token label on line %d", line);
+		return 1;
+	}
+	if(label_store->size == NUM_LABELS)
+	{
+		LOG("Label store (size %d) is full on line %d", NUM_LABELS, line);
+		return 1;
+	}
+	if(find_label(tokens[0], label_store) != -1)
+	{
+		LOG("Label on line %d already exists", line);
+		return 1;
+	}
+	Label *label = &label_store->labels[label_store->size];
+	memcpy(label->name, tokens[0], MAX_TOKEN_LENGTH);
+	label->pos = pos;
+	label_store->size++;
+	return 0;
+}
+
+int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tokens, LabelStore* label_store, unsigned char *c, int* size, int line)
+{
+	*size = 2;
 	*c = 0;
 	*(c+1) = 0;
 	ArgsType type = ARGS_INVALID;
@@ -121,6 +173,7 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 		return 1;
 	}
 	int required_num_args = 0;
+	if(type & ARGS_LABEL) required_num_args+=3;
 	if(type & ARGS_D) required_num_args++;
 	if(type & ARGS_V) required_num_args++;
 	if(type & ARGS_AB) required_num_args+=2;
@@ -130,6 +183,22 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 		return 1;
 	}
 	int current_token=1;
+	if(type & ARGS_LABEL)
+	{
+		int pos = find_label(tokens[current_token++], label_store);
+		if(pos == -1)
+		{
+			LOG("Unable to find label on line %d", line);
+			return 1;
+		}
+		int a = get_arg(tokens[current_token++], 1, line);
+		int b = get_arg(tokens[current_token++], 1, line);
+		*c = a;
+		*(c+1) = (pos&0xff00)>>8;
+		*(c+2) = b;
+		*(c+3) = (pos&0xff);
+		*size = 4;
+	}
 	if(type & ARGS_D)
 	{
 		int d = get_arg(tokens[current_token++], 1, line);
@@ -162,6 +231,8 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 	int token_pos = 0;
 	unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH];
 	memset(tokens, 0, sizeof(tokens));
+	LabelStore label_store;
+	memset(&label_store, 0, sizeof(label_store));
 	for(in_off=0; in_off<TEST_PROGRAM_SIZE; in_off++)
 	{
 		unsigned char c = *(in+in_off);
@@ -183,16 +254,25 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 		}
 		if(c == '\n')
 		{
-			if(out_off == TEST_PROGRAM_SIZE-1)
+			if(out_off == TEST_PROGRAM_SIZE-2)
 			{
 				LOG("Run out of output space.");
 				return 1;
 			}
 			if(token_num || token_pos)
 			{
-				int fail = create_instruction(tokens, token_num+1, &out[out_off], line);
-				if(fail) return 1;
-				out_off+=2;
+				if(tokens[0][0] == '-')
+				{
+					int fail = create_label(tokens, token_num+1, &label_store, out_off, line);
+					if(fail) return 1;
+				}
+				else
+				{
+					int size;
+					int fail = create_instruction(tokens, token_num+1, &label_store, &out[out_off], &size, line);
+					if(fail) return 1;
+					out_off += size;
+				}
 			}
 			token_num = 0;
 			token_pos = 0;
@@ -218,7 +298,7 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 			comment_mode = 1;
 			continue;
 		}
-		if((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+		if((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-')
 		{
 			if(token_pos == MAX_TOKEN_LENGTH)
 			{
