@@ -25,7 +25,7 @@ Test tests[NUM_TESTS] = {
 	{{"lod 5 6 7\n"},{0x65,0x67},2}, // lod
 	{{"sav 6 7 8\n"},{0x76,0x78},2}, // sav
 	{{"jmp 7 8\n"},{0x80,0x78},2}, // jmp
-	{{"cnd 8\n"},{0x98,0x00},2}, // cnd
+	{{"jcn 8 1 2\n"},{0x98,0x12},2}, // cnd
 	{{"ovr 9\n"},{0xa9,0x00},2}, // ovr
 	{{"pnt a\n"},{0xba,0x00},2}, // pnt
 	{{"dsp b c d\n"},{0xcb,0xcd},2}, // dsp
@@ -107,7 +107,7 @@ Op ops[NUMBER_OF_OPS] = {
 	{"lod", ARGS_D | ARGS_AB},
 	{"sav", ARGS_D | ARGS_AB},
 	{"jmp", ARGS_AB},
-	{"cnd", ARGS_D},
+	{"jcn", ARGS_D | ARGS_AB},
 	{"ovr", ARGS_D},
 	{"pnt", ARGS_D},
 	{"dsp", ARGS_D | ARGS_AB},
@@ -154,10 +154,6 @@ int create_label(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int num_tok
 
 int create_request(unsigned char token[MAX_TOKEN_LENGTH], LabelStore* label_requests, int pos, int line)
 {
-	(void)token;
-	(void)label_requests;
-	(void)pos;
-	(void)line;	
 	if(label_requests->size == NUM_LABELS)
 	{
 		LOG("Label requests (size %d) is full on line %d", NUM_LABELS, line);
