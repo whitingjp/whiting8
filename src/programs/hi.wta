@@ -1,0 +1,15 @@
+; Simplest test, just print "Hi!"
+
+; Load 'H' into r0 'I' into r1 '!' into r2
+val 0 48
+val 1 69
+val 2 21
+
+; Print each character
+pnt 0
+pnt 1
+pnt 2
+
+; Terminate execution with successful error code
+val 0 0
+hlt 0

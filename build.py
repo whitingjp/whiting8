@@ -32,6 +32,13 @@ n.variable('cflags', cflags)
 n.variable('ldflags', ldflags)
 n.newline()
 
+inputdir = 'input'
+builddir = 'build'
+outdir = joinp(builddir, 'whiting8')
+testdir = joinp(builddir, 'test')
+data_in = 'data'
+data_out = joinp(outdir, 'data')
+
 n.rule('cxx',
   command='gcc -MMD -MF $out.d $cflags -c $in -o $out',
   depfile='$out.d',
@@ -45,14 +52,10 @@ n.rule('cp',
 n.rule('test',
   command='$in --test $out',
   description='TEST $in')
+n.rule('assemble',
+  command='%s $in $out' % joinp(outdir, 'assembler'),
+  description='ASSEMBLE $in $out')
 n.newline()
-
-inputdir = 'input'
-builddir = 'build'
-outdir = joinp(builddir, 'whiting8')
-testdir = joinp(builddir, 'test')
-data_in = 'data'
-data_out = joinp(outdir, 'data')
 
 objdir = joinp(builddir, 'obj')
 def obj_walk(srcdir):
@@ -79,21 +82,27 @@ for name in names:
   targets += n.build(joinp(outdir, target), 'link', obj)
   tests += n.build(joinp(testdir, name+'.log'), 'test', joinp(outdir, target))
   n.newline()
+apps = n.build('apps', 'phony', targets)
+test = n.build('test', 'phony', apps+tests)
+n.newline()
 
 data = []
-for (dirpath, dirnames, filenames) in os.walk(data_in):
-  for f in filenames:
-    s = os.path.relpath(joinp(dirpath, f), data_in)
-    data += n.build(joinp(data_out, s), 'cp', joinp(data_in, s))
-if data != []:
-  n.newline()
-
 data += n.build(joinp(outdir, 'readme.txt'), 'cp', 'README.md')
-
-
 targets += n.build('data', 'phony', data)
 n.newline()
 
-full = n.build('all', 'phony', targets)
-test = n.build('test', 'phony', full+tests)
-n.default('test')
+programsrc = joinp('src', 'programs')
+programout = joinp(outdir, 'programs')
+programs = []
+for (dirpath, dirnames, filenames) in os.walk(programsrc):
+  for f in filenames:
+    _, ext = os.path.splitext(f)
+    if ext == '.wta':
+      s = os.path.relpath(joinp(dirpath, f), programsrc)
+      o = s.replace('.wta', '.wt8')
+      programs += n.build(joinp(programout, o), 'assemble', [joinp(programsrc, s)], apps)
+progs = n.build('progs', 'phony', programs)
+n.newline()
+
+all = n.build('all', 'phony', apps+data+test+progs)
+n.default('all')
