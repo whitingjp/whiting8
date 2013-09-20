@@ -1,6 +1,7 @@
-//#include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <common/file.h>
 #include <common/logging.h>
 
 #define TEST_PROGRAM_SIZE (512)
@@ -264,21 +265,8 @@ int run_test(int n)
 	QLOG("P");
 	return 0;
 }
-
-int main( int arg, const char** argv)
+int run_tests()
 {
-	if(arg < 3)
-	{
-		QLOG("Insufficent arguments.");
-		return 1;
-	}
-	if(strncmp(argv[1], "--test", 6) != 0)
-	{
-		QLOG("Invalid flag.");
-		return 1;
-	}
-	set_logfile(argv[2]);
-
 	QLOG( "Running Tests: " );
 	int fail = 0;
 
@@ -289,6 +277,46 @@ int main( int arg, const char** argv)
 		QLOG("\nSome tests failed!\n");
 	else
 		QLOG("\nAll tests passed :)\n");
-
 	return fail;
+}
+
+int main( int arg, const char** argv)
+{
+	if(arg < 3)
+	{
+		QLOG("\nInsufficent arguments.");
+		return 1;
+	}
+	if(strncmp(argv[1], "--test", 6) == 0)
+	{
+		set_logfile(argv[2]);
+		return run_tests();
+	}
+
+	unsigned char input[TEST_PROGRAM_SIZE];
+	memset(input, 0x00, sizeof(input));
+	int size;
+	bool success = file_load(argv[1], &size, input, sizeof(input));
+	if(!success)
+	{
+		LOG("Failed to load source file.");
+		return 1;
+	}
+
+	unsigned char output[TEST_PROGRAM_SIZE];
+	int out_size;
+	int fail = tokenize(input, output, &out_size);
+	if(fail)
+	{
+		LOG("Failed to assemble source.");
+		return 1;
+	}
+
+	success = file_save(argv[2], out_size, output);
+	if(!success)
+	{
+		LOG("Failed to save output file.");
+		return 1;
+	}
+	return 0;
 }

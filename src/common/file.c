@@ -12,15 +12,7 @@ bool file_save(const char* fileName, int size, const void* data)
     LOG("Failed to open %s for save.", fileName);
     return false;
   }
-    
-  written = fwrite(&size, 1, sizeof(size), dest);
-  if(written != sizeof(size))
-  {
-    LOG("Failed to write size to %s", fileName);
-    fclose(dest);
-    return false;
-  }
-  
+
   written = fwrite(data, 1, size, dest);
   if(written != size)
   {
@@ -33,30 +25,26 @@ bool file_save(const char* fileName, int size, const void* data)
   return true;
 }
 
-bool file_load(const char* fileName, int size, void* data)
+bool file_load(const char* fileName, int* size, void* data, int data_size)
 {
   FILE *src;
   int read;
-  int readSize;
   src = fopen(fileName, "rb");
   if (src == NULL)
   {
     LOG("Failed to open %s for load.", fileName);
     return false;
   }
-  read = fread( &readSize, 1, sizeof(readSize), src );
-  if(read != sizeof(readSize))
+  fseek(src, 0L, SEEK_END);
+  *size = ftell(src);
+  fseek(src, 0L, SEEK_SET);
+  if(*size > data_size)
   {
-    LOG("Failed to read size from %s", fileName);
-    fclose(src);
+    LOG("Not enough size in data buffer, %d available, %d required.", data_size, *size);
     return false;
   }
-  if(readSize != size)
-  {
-    LOG("Read size (%d) does not equal data structure size (%d)", readSize, size);
-  }
-  read = fread( data, 1, size, src );
-  if(read != size)
+  read = fread( data, 1, *size, src );
+  if(read != *size)
   {
     LOG("Failed to read object from %s", fileName);
     fclose(src);
