@@ -84,8 +84,9 @@ data = []
 for (dirpath, dirnames, filenames) in os.walk(data_in):
   for f in filenames:
     s = os.path.relpath(joinp(dirpath, f), data_in)
-    data += n.build(joinp(data_out, s), 'cp', joinp(data_in, s))    
-n.newline()
+    data += n.build(joinp(data_out, s), 'cp', joinp(data_in, s))
+if data != []:
+  n.newline()
 
 data += n.build(joinp(outdir, 'readme.txt'), 'cp', 'README.md')
 
