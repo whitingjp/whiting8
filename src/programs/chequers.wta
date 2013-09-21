@@ -1,0 +1,45 @@
+; print a chequer board pattern
+
+val 0 23; '#'
+val 1 2e; '.'
+val 3 20
+val 4 04
+val 5 02
+copy 7 3
+
+-loop
+copy 6 3
+dec 6
+div 6 4
+mod 6 5
+is0 6
+label -dot e f
+jcn e f
+pnt 0
+label -print e f
+jmp e f
+-dot
+pnt 1
+-print
+dec 3
+not0 3
+label -loop e f
+jcn e f
+
+copy 8 7
+dec 8
+mod 8 4
+not0 8
+label -postswap e f
+jcn e f
+copy 8 0
+copy 0 1
+copy 1 8
+-postswap
+val 3 20
+val 8 0a; new line
+pnt 8
+dec 7
+not0 7
+label -loop e f
+jcn e f
