@@ -4,11 +4,13 @@
 #include <string.h>
 #include <common/file.h>
 #include <common/logging.h>
+#include <emulator/display.h>
 
 #define NUM_REGISTERS (16)
 unsigned char registers[16];
 #define MEMORY_SIZE (256*256)
 unsigned char memory[MEMORY_SIZE];
+unsigned char blah[MEMORY_SIZE];
 unsigned int PC;
 
 #define TEST_PROGRAM_SIZE (512)
@@ -214,6 +216,13 @@ unsigned char run()
 			case 0xb: // pnt
 				putchar(registers[d]);
 				break;
+			case 0xc: // dsp
+			{
+				int loc = memory_location(registers[a],registers[b]);
+				if(display(&memory[loc]))
+					return 0;
+				break;
+			}
 			case 0xe: // hlt
 				exit_code = registers[d];
 				running = 0;
@@ -226,6 +235,7 @@ unsigned char run()
 		}
 		PC += 2;
 		overflow = new_overflow;
+
 	}
 	return exit_code;
 }
@@ -257,9 +267,8 @@ void corrupt_memory()
 }
 
 int run_tests()
-{
+{	
 	corrupt_memory();
-
 	QLOG( "Running Tests: " );
 
 	int i;
@@ -291,6 +300,11 @@ int main( int arg, const char** argv)
 		return run_tests();
 	}
 	
+	if(display_init())
+	{
+		LOG("Failed to create display.");
+		return 1;
+	}	
 	unsigned char input[TEST_PROGRAM_SIZE];
 	int size;
 	bool success = file_load(argv[1], &size, input, sizeof(input));
@@ -302,5 +316,7 @@ int main( int arg, const char** argv)
 	memset(memory, 0xe0, sizeof(memory)); // Halt rapidly if overrun
 	memset(registers, 0, sizeof(registers));
 	memcpy(memory, input, size);
-	return run();
+	int exit_code = run();
+	display_close();
+	return exit_code;
 }

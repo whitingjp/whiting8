@@ -18,8 +18,8 @@ n = ninja_syntax.Writer(buildfile)
 
 objext = '.o'
 
-cflags = '-Isrc -Iinput/glfw/include -Wall -Wextra -Werror'
-ldflags = ' -Linput/glfw/lib-mingw -lglfw -lglu32 -lopengl32'
+cflags = '-Isrc -Iinput/glfw/include -Iinput/glew/include -Wall -Wextra -Werror'
+ldflags = ' -Linput/glfw/lib-mingw -Linput/glew -lglew32s -lglfw -lglu32 -lopengl32'
 if(args.debug):
   cflags = cflags + ' -g'
 else:

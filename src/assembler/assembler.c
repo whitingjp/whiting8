@@ -4,7 +4,7 @@
 #include <common/file.h>
 #include <common/logging.h>
 
-#define TEST_PROGRAM_SIZE (512)
+#define TEST_PROGRAM_SIZE (256*256)
 typedef struct
 {
 	const unsigned char program[TEST_PROGRAM_SIZE];
@@ -44,7 +44,7 @@ Test tests[NUM_TESTS] = {
 	{{"sav 6 7 8\n"},{0x76,0x78},2},
 	{{"ovr 9\n"},{0xa9,0x00},2},
 	{{"pnt a\n"},{0xba,0x00},2},
-	{{"dsp b c d\n"},{0xcb,0xcd},2},
+	{{"dsp c d\n"},{0xc0,0xcd},2},
 	{{"inp c\n"},{0xdc,0x00},2},
 	{{"hlt d\n"},{0xed,0x00},2},
 	{{"snd e f\n"},{0xf0,0xef},2},
@@ -145,7 +145,7 @@ Op ops[NUMBER_OF_OPS] = {
 	{"sav", 0x70, ARGS_D | ARGS_AB},
 	{"ovr", 0xa0, ARGS_D},
 	{"pnt", 0xb0, ARGS_D},
-	{"dsp", 0xc0, ARGS_D | ARGS_AB},
+	{"dsp", 0xc0, ARGS_AB},
 	{"inp", 0xd0, ARGS_D},
 	{"hlt", 0xe0, ARGS_D},
 	{"snd", 0xf0, ARGS_AB},

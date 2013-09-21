@@ -5,6 +5,8 @@ val 1 2e; '.'
 val 3 20
 val 4 04
 val 5 02
+val a ef
+val b 00
 copy 7 3
 
 -loop
@@ -16,10 +18,18 @@ is0 6
 label -dot e f
 jcn e f
 pnt 0
+val d ff
+sav d a b
+inc b
+ovr a
 label -print e f
 jmp e f
 -dot
 pnt 1
+val d 00
+sav d a b
+inc b
+ovr a
 -print
 dec 3
 not0 3
@@ -39,7 +49,15 @@ copy 1 8
 val 3 20
 val 8 0a; new line
 pnt 8
+val d 04
+add b d
 dec 7
 not0 7
 label -loop e f
 jcn e f
+-wait
+label -wait e f
+val d ef
+val e 00
+dsp d e
+jmp e f
