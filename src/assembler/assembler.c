@@ -52,9 +52,12 @@ Test tests[NUM_TESTS] = {
 	{{"-label\n"},{},0}, // create a label
 	{{"add 3 4\n-moo\nlabel -moo 0 1\n"},{0x10,0x34, 0x00,0x00,0x01,0x02}, 6}, // load label
 	{{"label -moo 0 1\n-moo\n"},{0x00,0x00,0x01,0x04}, 4}, // label comes after usage
+	{{"raw fa bc\n"},{0xfa,0xbc},2}, // small raw
+	{{"raw 00 0f f0 aa cd ee 22 1f 00 0f f0 aa cd ee 22 1f\n"},{0x00,0x0f,0xf0,0xaa,0xcd,0xee,0x22,0x1f,0x00,0x0f,0xf0,0xaa,0xcd,0xee,0x22,0x1f},16}, // raw data
+	{{"data 00 04\n"},{0x00,0x00,0x00,0x00},4}, // data block
 };
 
-#define NUM_TOKENS (4)
+#define NUM_TOKENS (32)
 #define MAX_TOKEN_LENGTH (16)
 #define NUM_LABELS (64)
 
@@ -104,6 +107,8 @@ typedef enum
 	ARGS_V=4,
 	ARGS_A=8,
 	ARGS_B=16,
+	ARGS_RAW=32,
+	ARGS_DATA=64,
 	ARGS_AB=ARGS_A|ARGS_B,
 	ARGS_INVALID=0,
 } ArgsType;
@@ -150,6 +155,8 @@ Op ops[NUMBER_OF_OPS] = {
 	{"hlt", 0xe0, ARGS_D},
 	{"snd", 0xf0, ARGS_AB},
 	{"label", 0xff, ARGS_LABEL},
+	{"raw", 0xff, ARGS_RAW},
+	{"data", 0xff, ARGS_DATA},
 };
 
 int find_label(unsigned char token[MAX_TOKEN_LENGTH], LabelStore* label_store)
@@ -225,6 +232,8 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 	}
 	int required_num_args = 0;
 	if(type & ARGS_LABEL) required_num_args+=3;
+	if(type & ARGS_RAW) required_num_args=num_tokens-1;
+	if(type & ARGS_DATA) required_num_args+=2;
 	if(type & ARGS_D) required_num_args++;
 	if(type & ARGS_V) required_num_args++;
 	if(type & ARGS_A) required_num_args++;
@@ -241,11 +250,29 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 			return 1;
 		int a = get_arg(tokens[current_token++], 1, line);
 		int b = get_arg(tokens[current_token++], 1, line);
+		if(a==-1 || b==-1) return 1;
 		*c = a;
 		*(c+1) = 0;
 		*(c+2) = b;
 		*(c+3) = 0;
 		*size = 4;
+	}
+	if(type & ARGS_RAW)
+	{
+		int i;
+		for(i=0; i<required_num_args; i++)
+			*(c+i) = get_arg(tokens[current_token++], 2, line);
+		*size = required_num_args;
+	}
+	if(type & ARGS_DATA)
+	{
+		int a = get_arg(tokens[current_token++], 2, line);
+		int b = get_arg(tokens[current_token++], 2, line);
+		if(a==-1 || b==-1) return 1;
+		*size = (a<<8)+b;
+		int i;
+		for(i=0; i<*size; i++)
+			*(c+i) = 0x0;
 	}
 	if(type & ARGS_D)
 	{
@@ -342,7 +369,10 @@ int tokenize(const unsigned char *in, unsigned char *out, int *out_size)
 			if(token_pos > 0)
 			{
 				if(token_num+1 == NUM_TOKENS)
+				{
 					LOG("Too many tokens on line %d", line);
+					return 1;
+				}
 				token_num++;
 				token_pos = 0;
 			}
