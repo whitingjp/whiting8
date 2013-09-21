@@ -25,11 +25,23 @@ final 8 are 'value' V
 1A lshift A=A<<B
 1B mod A=A%B
 1C copy A=B
-5 gte A>=B -> D
+20 eq A==B -> comparebit
+21 neq A!=B -> comparebit
+22 gt A>B -> comparebit
+23 gte A>=B -> comparebit
+24 lt A<B -> comparebit
+25 lte A<=B -> comparebit
+26 is0 A==0 -> comparebit
+27 not0 A!=0 -> comparebit
+28 cnd comparebit -> A
+30 jmp Set PC to memory addressed by AB.
+31 jcn Set PC to memory addressed by AB if comparebit
+4 ?
+5 ?
 6 load Load memory addressed by AB into D
 7 sav Save D into memory addressed by AB
-8 jmp Set PC to memory addressed by AB.
-9 jcn Set PC to memory addressed by AB if D!=0.
+8 ?
+9 ?
 A ovr Add (or take) one from D if last operation caused arithmetic overflow.
 B pnt Print D as ascii char to console
 C dsp Start displaying memory addressed from AB pallete chosen from 16 possibles via D, waits for VSYNC

@@ -12,35 +12,42 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (31)
+#define NUM_TESTS (41)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
-	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
+	{{"val 2 4f\n"},{0x02,0x4f}, 2},
 	{{"val 1 f4\nval f aa; comment\n"},{0x01,0xf4, 0x0f,0xaa}, 4}, // multiple instructions
-	{{"add 1 2\n"},{0x10,0x12},2}, // add
-	{{"sub 2 3\n"},{0x11,0x23},2}, // sub
-	{{"div 3 4\n"},{0x12,0x34},2}, // div
-	{{"mul 4 5\n"},{0x13,0x45},2}, // mul
-	{{"inc 5\n"},{0x14,0x50},2}, // inc
-	{{"dec 6\n"},{0x15,0x60},2}, // dec
-	{{"and 3 4\n"},{0x16,0x34},2}, // and
-	{{"or 4 5\n"},{0x17,0x45},2}, // or
-	{{"xor 5 6\n"},{0x18,0x56},2}, // xor
-	{{"rshift 6 7\n"},{0x19,0x67},2}, // rshift
-	{{"lshift 7 8\n"},{0x1a,0x78},2}, // lshift
-	{{"mod 8 9\n"},{0x1b,0x89},2}, // mod
-	{{"copy 9 a\n"},{0x1c,0x9a},2}, // copy
-	{{"gte 4 5 6\n"},{0x54,0x56},2}, // gte
-	{{"lod 5 6 7\n"},{0x65,0x67},2}, // lod
-	{{"sav 6 7 8\n"},{0x76,0x78},2}, // sav
-	{{"jmp 7 8\n"},{0x80,0x78},2}, // jmp
-	{{"jcn 8 1 2\n"},{0x98,0x12},2}, // cnd
-	{{"ovr 9\n"},{0xa9,0x00},2}, // ovr
-	{{"pnt a\n"},{0xba,0x00},2}, // pnt
-	{{"dsp b c d\n"},{0xcb,0xcd},2}, // dsp
-	{{"inp c\n"},{0xdc,0x00},2}, // inp
-	{{"hlt d\n"},{0xed,0x00},2}, // hlt
-	{{"snd e f\n"},{0xf0,0xef},2}, // snd
+	{{"add 1 2\n"},{0x10,0x12},2},
+	{{"sub 2 3\n"},{0x11,0x23},2},
+	{{"div 3 4\n"},{0x12,0x34},2},
+	{{"mul 4 5\n"},{0x13,0x45},2},
+	{{"inc 5\n"},{0x14,0x50},2},
+	{{"dec 6\n"},{0x15,0x60},2},
+	{{"and 3 4\n"},{0x16,0x34},2},
+	{{"or 4 5\n"},{0x17,0x45},2},
+	{{"xor 5 6\n"},{0x18,0x56},2},
+	{{"rshift 6 7\n"},{0x19,0x67},2},
+	{{"lshift 7 8\n"},{0x1a,0x78},2},
+	{{"mod 8 9\n"},{0x1b,0x89},2},
+	{{"copy 9 a\n"},{0x1c,0x9a},2},
+	{{"eq 0 1\n"},{0x20,0x01},2},
+	{{"neq 0 1\n"},{0x21,0x01},2},
+	{{"gt 0 1\n"},{0x22,0x01},2},
+	{{"gte 0 1\n"},{0x23,0x01},2},
+	{{"lt 0 1\n"},{0x24,0x01},2},
+	{{"lte 0 1\n"},{0x25,0x01},2},
+	{{"is0 1\n"},{0x26,0x10},2},
+	{{"not0 2\n"},{0x27,0x20},2},
+	{{"jmp 7 8\n"},{0x30,0x78},2},
+	{{"jcn 1 2\n"},{0x31,0x12},2},
+	{{"lod 5 6 7\n"},{0x65,0x67},2},
+	{{"sav 6 7 8\n"},{0x76,0x78},2},
+	{{"ovr 9\n"},{0xa9,0x00},2},
+	{{"pnt a\n"},{0xba,0x00},2},
+	{{"dsp b c d\n"},{0xcb,0xcd},2},
+	{{"inp c\n"},{0xdc,0x00},2},
+	{{"hlt d\n"},{0xed,0x00},2},
+	{{"snd e f\n"},{0xf0,0xef},2},
 	{{"val 0 f0\nval 1 f2\nadd 0 1\nhlt 0\n"},{0x00,0xf0, 0x01,0xf2, 0x10,0x01, 0xe0,0x00},8}, // longer test
 	{{"-label\n"},{},0}, // create a label
 	{{"add 3 4\n-moo\nlabel -moo 0 1\n"},{0x10,0x34, 0x00,0x00,0x01,0x02}, 6}, // load label
@@ -108,7 +115,7 @@ typedef struct
 	ArgsType type;	
 } Op;
 
-#define NUMBER_OF_OPS (26)
+#define NUMBER_OF_OPS (36)
 Op ops[NUMBER_OF_OPS] = {
 	{"val", 0x00, ARGS_D | ARGS_V},
 	{"add", 0x10, ARGS_AB},
@@ -124,11 +131,18 @@ Op ops[NUMBER_OF_OPS] = {
 	{"lshift", 0x1a, ARGS_AB},
 	{"mod", 0x1b, ARGS_AB},
 	{"copy", 0x1c, ARGS_AB},
-	{"gte", 0x50, ARGS_D | ARGS_AB},
+	{"eq", 0x20, ARGS_AB},
+	{"neq", 0x21, ARGS_AB},
+	{"gt", 0x22, ARGS_AB},
+	{"gte", 0x23, ARGS_AB},
+	{"lt", 0x24, ARGS_AB},
+	{"lte", 0x25, ARGS_AB},
+	{"is0", 0x26, ARGS_A},
+	{"not0", 0x27, ARGS_A},
+	{"jmp", 0x30, ARGS_AB},
+	{"jcn", 0x31, ARGS_AB},
 	{"lod", 0x60, ARGS_D | ARGS_AB},
 	{"sav", 0x70, ARGS_D | ARGS_AB},
-	{"jmp", 0x80, ARGS_AB},
-	{"jcn", 0x90, ARGS_D | ARGS_AB},
 	{"ovr", 0xa0, ARGS_D},
 	{"pnt", 0xb0, ARGS_D},
 	{"dsp", 0xc0, ARGS_D | ARGS_AB},

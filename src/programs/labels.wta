@@ -6,8 +6,8 @@ val 2 1
 -loop
 pnt 0
 add 0 2
-gte 3 1 0
+neq 0 1
 label -loop e f
-jcn 3 e f
+jcn e f
 -end
 
