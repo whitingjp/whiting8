@@ -3,64 +3,41 @@ All 8 bit.
 instructions are 16 bit
 1st 4 is opcode
 2nd 4 is 'dest' D
+  OR
+2nd 4 is secondary opcode
 
 3rd 4 is 'src' A
 4th 4 is 'src' B
   OR
 final 8 are 'value' V
 
-0 VAL V -> D
-1 ADD A+B -> D
-2 SUB A-B -> D
-3 AND A&B -> D
-4 OR  A|B -> D
-5 GTE A>=B -> D
-6 LOD Load memory addressed by AB into D
-7 SAV Save D into memory addressed by AB
-8 JMP Set PC to memory addressed by AB.
-9 JCN Set PC to memory addressed by AB if D!=0.
-A OVR Add (or take) one from D if last operation caused arithmetic overflow.
-B PNT Print D as ascii char to console
-C DSP Start displaying memory addressed from AB pallete chosen from 16 possibles via D, waits for VSYNC
-D INP Load input mask into D  (input bits are NESWAB00)
-E HLT Quit with exit code D
-F SND To Be Designed (presumably point at a filled buffer and play in some way)
+0 val V -> D
+10 add A=A+B
+11 sub A=A-B
+12 div A=A/B
+13 mul A=A*B
+14 inc A=A++
+15 dec A=A--
+16 and A=A&B
+17 or  A=A|B
+18 xor A=A^B
+19 rshift A=A>>B
+1A lshift A=A<<B
+1B mod A=A%B
+1C copy A=B
+5 gte A>=B -> D
+6 load Load memory addressed by AB into D
+7 sav Save D into memory addressed by AB
+8 jmp Set PC to memory addressed by AB.
+9 jcn Set PC to memory addressed by AB if D!=0.
+A ovr Add (or take) one from D if last operation caused arithmetic overflow.
+B pnt Print D as ascii char to console
+C dsp Start displaying memory addressed from AB pallete chosen from 16 possibles via D, waits for VSYNC
+D inp Load input mask into D  (input bits are NESWAB00)
+E hlt Quit with exit code D
+F snd To Be Designed (presumably point at a filled buffer and play in some way)
 
 Memory layout is free.
 'VRAM' is 128x128 2 bit pixels = 4096 bytes = 16 memory pages
 So 64x2 (back buffer) = 32 pages of visual mem.
 Remaining 224 pages for code + assets.
-
-
-;mem copy
-VAL 1 $srca
-VAL 2 $srcb
-VAL 3 $dsta
-VAL 4 $dstb
-VAL 5 $n
-VAL 6 1
-:JUMP
-LOD 0 1 2
-SAV 0 3 4
-SUB 5 6
-ADD 1 6
-OVR 2
-ADD 3 6
-OVR 4
-CND 5
-JMP :JUMP
-
-
-;print string
-VAL 1 $srca
-VAL 2 $srcb
-VAL 3 1
-:LOOP
-LOD 0 1 2
-CND 0
-JMP :CONTINUE
-JMP :END
-PNT 0
-ADD 1 3
-OVR 2
-:END

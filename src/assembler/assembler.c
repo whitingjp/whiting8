@@ -12,15 +12,24 @@ typedef struct
 	int output_size;
 } Test;
 
-#define NUM_TESTS (22)
+#define NUM_TESTS (31)
 Test tests[NUM_TESTS] = {
 	{{"; AASGNWFIAWNA\n"},{}, 0}, // comments
 	{{"val 2 4f\n"},{0x02,0x4f}, 2}, // val
 	{{"val 1 f4\nval f aa; comment\n"},{0x01,0xf4, 0x0f,0xaa}, 4}, // multiple instructions
-	{{"add 0 1 2\n"},{0x10,0x12},2}, // add
-	{{"sub 1 2 3\n"},{0x21,0x23},2}, // sub
-	{{"and 2 3 4\n"},{0x32,0x34},2}, // and
-	{{"or 3 4 5\n"},{0x43,0x45},2}, // or
+	{{"add 1 2\n"},{0x10,0x12},2}, // add
+	{{"sub 2 3\n"},{0x11,0x23},2}, // sub
+	{{"div 3 4\n"},{0x12,0x34},2}, // div
+	{{"mul 4 5\n"},{0x13,0x45},2}, // mul
+	{{"inc 5\n"},{0x14,0x50},2}, // inc
+	{{"dec 6\n"},{0x15,0x60},2}, // dec
+	{{"and 3 4\n"},{0x16,0x34},2}, // and
+	{{"or 4 5\n"},{0x17,0x45},2}, // or
+	{{"xor 5 6\n"},{0x18,0x56},2}, // xor
+	{{"rshift 6 7\n"},{0x19,0x67},2}, // rshift
+	{{"lshift 7 8\n"},{0x1a,0x78},2}, // lshift
+	{{"mod 8 9\n"},{0x1b,0x89},2}, // mod
+	{{"copy 9 a\n"},{0x1c,0x9a},2}, // copy
 	{{"gte 4 5 6\n"},{0x54,0x56},2}, // gte
 	{{"lod 5 6 7\n"},{0x65,0x67},2}, // lod
 	{{"sav 6 7 8\n"},{0x76,0x78},2}, // sav
@@ -32,9 +41,9 @@ Test tests[NUM_TESTS] = {
 	{{"inp c\n"},{0xdc,0x00},2}, // inp
 	{{"hlt d\n"},{0xed,0x00},2}, // hlt
 	{{"snd e f\n"},{0xf0,0xef},2}, // snd
-	{{"val 0 f0\nval 1 f2\nadd 0 0 1\nhlt 0\n"},{0x00,0xf0, 0x01,0xf2, 0x10,0x01, 0xe0,0x00},8}, // longer test
+	{{"val 0 f0\nval 1 f2\nadd 0 1\nhlt 0\n"},{0x00,0xf0, 0x01,0xf2, 0x10,0x01, 0xe0,0x00},8}, // longer test
 	{{"-label\n"},{},0}, // create a label
-	{{"add 2 3 4\n-moo\nlabel -moo 0 1\n"},{0x12,0x34, 0x00,0x00,0x01,0x02}, 6}, // load label
+	{{"add 3 4\n-moo\nlabel -moo 0 1\n"},{0x10,0x34, 0x00,0x00,0x01,0x02}, 6}, // load label
 	{{"label -moo 0 1\n-moo\n"},{0x00,0x00,0x01,0x04}, 4}, // label comes after usage
 };
 
@@ -86,35 +95,47 @@ typedef enum
 	ARGS_LABEL=1,
 	ARGS_D=2,
 	ARGS_V=4,
-	ARGS_AB=8,
+	ARGS_A=8,
+	ARGS_B=16,
+	ARGS_AB=ARGS_A|ARGS_B,
 	ARGS_INVALID=0,
 } ArgsType;
 
 typedef struct
 {
 	char instruction[MAX_TOKEN_LENGTH];
-	ArgsType type;
+	unsigned char op;
+	ArgsType type;	
 } Op;
 
-#define NUMBER_OF_OPS (17)
+#define NUMBER_OF_OPS (26)
 Op ops[NUMBER_OF_OPS] = {
-	{"val", ARGS_D | ARGS_V},
-	{"add", ARGS_D | ARGS_AB},
-	{"sub", ARGS_D | ARGS_AB},
-	{"and", ARGS_D | ARGS_AB},
-	{"or", ARGS_D | ARGS_AB},
-	{"gte", ARGS_D | ARGS_AB},
-	{"lod", ARGS_D | ARGS_AB},
-	{"sav", ARGS_D | ARGS_AB},
-	{"jmp", ARGS_AB},
-	{"jcn", ARGS_D | ARGS_AB},
-	{"ovr", ARGS_D},
-	{"pnt", ARGS_D},
-	{"dsp", ARGS_D | ARGS_AB},
-	{"inp", ARGS_D},
-	{"hlt", ARGS_D},
-	{"snd", ARGS_AB},
-	{"label", ARGS_LABEL},
+	{"val", 0x00, ARGS_D | ARGS_V},
+	{"add", 0x10, ARGS_AB},
+	{"sub", 0x11, ARGS_AB},
+	{"div", 0x12, ARGS_AB},
+	{"mul", 0x13, ARGS_AB},
+	{"inc", 0x14, ARGS_A},
+	{"dec", 0x15, ARGS_A},
+	{"and", 0x16, ARGS_AB},
+	{"or", 0x17, ARGS_AB},
+	{"xor", 0x18, ARGS_AB},
+	{"rshift", 0x19, ARGS_AB},
+	{"lshift", 0x1a, ARGS_AB},
+	{"mod", 0x1b, ARGS_AB},
+	{"copy", 0x1c, ARGS_AB},
+	{"gte", 0x50, ARGS_D | ARGS_AB},
+	{"lod", 0x60, ARGS_D | ARGS_AB},
+	{"sav", 0x70, ARGS_D | ARGS_AB},
+	{"jmp", 0x80, ARGS_AB},
+	{"jcn", 0x90, ARGS_D | ARGS_AB},
+	{"ovr", 0xa0, ARGS_D},
+	{"pnt", 0xb0, ARGS_D},
+	{"dsp", 0xc0, ARGS_D | ARGS_AB},
+	{"inp", 0xd0, ARGS_D},
+	{"hlt", 0xe0, ARGS_D},
+	{"snd", 0xf0, ARGS_AB},
+	{"label", 0xff, ARGS_LABEL},
 };
 
 int find_label(unsigned char token[MAX_TOKEN_LENGTH], LabelStore* label_store)
@@ -178,7 +199,7 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 	{
 		if(strncmp((char*)tokens[0], ops[i].instruction, MAX_TOKEN_LENGTH)==0)
 		{
-			*c = i<<4;
+			*c = ops[i].op;
 			type = ops[i].type;
 		}
 	}
@@ -192,7 +213,8 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 	if(type & ARGS_LABEL) required_num_args+=3;
 	if(type & ARGS_D) required_num_args++;
 	if(type & ARGS_V) required_num_args++;
-	if(type & ARGS_AB) required_num_args+=2;
+	if(type & ARGS_A) required_num_args++;
+	if(type & ARGS_B) required_num_args++;
 	if(num_tokens-1 != required_num_args)
 	{
 		LOG("Expected %d args, but found %d on line %d", required_num_args, num_tokens-1, line);
@@ -223,12 +245,17 @@ int create_instruction(unsigned char tokens[NUM_TOKENS][MAX_TOKEN_LENGTH], int n
 		if(v == -1) return 1;
 		*(c+1) = v;
 	}
-	if(type & ARGS_AB)
+	if(type & ARGS_A)
 	{
 		int a = get_arg(tokens[current_token++], 1, line);
+		if(a == -1) return 1;
+		*(c+1) = (a<<4);
+	}
+	if(type & ARGS_B)
+	{		
 		int b = get_arg(tokens[current_token++], 1, line);
-		if(a == -1 || b == -1) return 1;
-		*(c+1) = (a<<4)+b;
+		if(b == -1) return 1;
+		*(c+1) |= b;
 	}
 	return 0;
 }
